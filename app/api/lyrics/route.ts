@@ -27,22 +27,33 @@ async function fetchLyrics(url: string) {
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
-  // Extract lyrics from the page
-  let lyrics = $('div[class^="Lyrics__Container"]')
-    .html()
-    ?.replace(/<br>/g, '\n')
-    .replace(/<(?!\s*br\s*\/?)[^>]+>/gi, '');
+  // Extract lyrics from the page using multiple potential selectors
+  let lyrics = '';
+  const selectors = [
+    'div[class^="Lyrics__Container"]',
+    '.lyrics',
+    '.song_body-lyrics',
+    '[data-lyrics-container="true"]',
+  ];
 
-  // Remove bracket lines and trim each line
+  selectors.forEach((selector) => {
+    $(selector).each((_, elem) => {
+      lyrics += $(elem).html() + '\n';
+    });
+  });
+
+  // Clean up the lyrics
   if (lyrics) {
     lyrics = lyrics
+      .replace(/<br>/g, '\n')
+      .replace(/<(?!\s*br\s*\/?)[^>]+>/gi, '')
       .split('\n')
       .filter((line) => !line.trim().match(/^\[.*\]$/))
       .map((line) => line.trim())
       .join('\n');
   }
 
-  console.log('Extracted and cleaned lyrics:', lyrics?.substring(0, 100) + '...');
+  console.log('Extracted and cleaned lyrics length:', lyrics?.length);
   return lyrics;
 }
 
