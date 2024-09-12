@@ -26,7 +26,11 @@ async function searchSong(title: string, artist: string) {
     }
     return result;
   } catch (error) {
-    console.error('Error searching for song:', error.message);
+    if (error instanceof Error) {
+      console.error('Error searching for song:', error.message);
+    } else {
+      console.error('Unknown error occurred while searching for song');
+    }
     throw new Error('Failed to search for song');
   }
 }
@@ -89,7 +93,10 @@ export async function POST(request: Request) {
     console.log('Successfully fetched lyrics');
     return NextResponse.json({ lyrics });
   } catch (error) {
-    console.error('Error fetching lyrics:', error);
-    return NextResponse.json({ error: 'Failed to fetch lyrics', details: error.message }, { status: 500 });
+    console.error('Error fetching lyrics:', error instanceof Error ? error.message : 'Unknown error');
+    return NextResponse.json(
+      { error: 'Failed to fetch lyrics', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    );
   }
 }
