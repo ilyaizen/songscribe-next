@@ -6,7 +6,7 @@ export function Footer() {
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
         <div>&copy; 2024 SongScribe. All rights reserved.</div>
         <a
-          href="https://github.com/songscribe"
+          href="https://github.com/ilyaizen/songscribe-next"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center space-x-2 hover:underline"
