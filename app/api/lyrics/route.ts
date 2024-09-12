@@ -1,0 +1,74 @@
+import { NextResponse } from 'next/server';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
+// Genius API base URL
+const GENIUS_API_BASE_URL = 'https://api.genius.com';
+
+// Function to search for a song
+async function searchSong(title: string, artist: string) {
+  console.log(`Searching for song: "${title}" by ${artist}`);
+  const response = await axios.get(`${GENIUS_API_BASE_URL}/search`, {
+    headers: {
+      Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
+    },
+    params: {
+      q: `${title} ${artist}`,
+    },
+  });
+
+  console.log('Search response:', response.data);
+  return response.data.response.hits[0]?.result;
+}
+
+// Function to fetch lyrics from Genius
+async function fetchLyrics(url: string) {
+  console.log(`Fetching lyrics from URL: ${url}`);
+  const response = await axios.get(url);
+  const $ = cheerio.load(response.data);
+
+  // Extract lyrics from the page
+  let lyrics = $('div[class^="Lyrics__Container"]')
+    .html()
+    ?.replace(/<br>/g, '\n')
+    .replace(/<(?!\s*br\s*\/?)[^>]+>/gi, '');
+
+  // Remove bracket lines and trim each line
+  if (lyrics) {
+    lyrics = lyrics
+      .split('\n')
+      .filter((line) => !line.trim().match(/^\[.*\]$/))
+      .map((line) => line.trim())
+      .join('\n');
+  }
+
+  console.log('Extracted and cleaned lyrics:', lyrics?.substring(0, 100) + '...');
+  return lyrics;
+}
+
+export async function POST(request: Request) {
+  try {
+    const { title, artist } = await request.json();
+    console.log(`Received request for lyrics: "${title}" by ${artist}`);
+
+    // Search for the song
+    const song = await searchSong(title, artist);
+    if (!song) {
+      console.log('Song not found');
+      return NextResponse.json({ error: 'Song not found' }, { status: 404 });
+    }
+
+    // Fetch lyrics
+    const lyrics = await fetchLyrics(song.url);
+    if (!lyrics) {
+      console.log('Lyrics not found');
+      return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });
+    }
+
+    console.log('Successfully fetched lyrics');
+    return NextResponse.json({ lyrics });
+  } catch (error) {
+    console.error('Error fetching lyrics:', error);
+    return NextResponse.json({ error: 'Failed to fetch lyrics' }, { status: 500 });
+  }
+}
