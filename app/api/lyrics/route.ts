@@ -8,17 +8,27 @@ const GENIUS_API_BASE_URL = 'https://api.genius.com';
 // Function to search for a song
 async function searchSong(title: string, artist: string) {
   console.log(`Searching for song: "${title}" by ${artist}`);
-  const response = await axios.get(`${GENIUS_API_BASE_URL}/search`, {
-    headers: {
-      Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
-    },
-    params: {
-      q: `${title} ${artist}`,
-    },
-  });
+  try {
+    const response = await axios.get(`${GENIUS_API_BASE_URL}/search`, {
+      headers: {
+        Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
+      },
+      params: {
+        q: `${title} ${artist}`,
+      },
+    });
 
-  console.log('Search response:', response.data);
-  return response.data.response.hits[0]?.result;
+    console.log('Search response:', response.data);
+    const result = response.data.response.hits[0]?.result;
+    if (!result) {
+      console.log('No results found for the given song and artist');
+      return null;
+    }
+    return result;
+  } catch (error) {
+    console.error('Error searching for song:', error.message);
+    throw new Error('Failed to search for song');
+  }
 }
 
 // Function to fetch lyrics from Genius
@@ -80,6 +90,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ lyrics });
   } catch (error) {
     console.error('Error fetching lyrics:', error);
-    return NextResponse.json({ error: 'Failed to fetch lyrics' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch lyrics', details: error.message }, { status: 500 });
   }
 }
