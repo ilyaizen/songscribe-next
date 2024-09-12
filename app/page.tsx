@@ -98,6 +98,18 @@ export default function Home() {
     );
   };
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleTranslate();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleTranslate();
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="mx-auto max-w-lg">
@@ -106,12 +118,7 @@ export default function Home() {
           <CardDescription>Enter the song details below</CardDescription>
         </CardHeader>
         <CardContent>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleTranslate();
-            }}
-          >
+          <form onSubmit={handleSubmit}>
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="songTitle">Song Title</Label>
@@ -120,6 +127,7 @@ export default function Home() {
                   placeholder="Enter song title"
                   value={songTitle}
                   onChange={(e) => setSongTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
                 />
               </div>
               <div className="flex flex-col space-y-1.5">
@@ -129,6 +137,7 @@ export default function Home() {
                   placeholder="Enter artist name"
                   value={artist}
                   onChange={(e) => setArtist(e.target.value)}
+                  onKeyDown={handleKeyDown}
                 />
               </div>
             </div>
