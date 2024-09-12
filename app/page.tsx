@@ -15,10 +15,24 @@ export default function Home() {
   const [translatedLyrics, setTranslatedLyrics] = useState('');
 
   const handleTranslate = async () => {
+    // Reset error and loading states
     setIsLoading(true);
     setError('');
     setLyrics('');
     setTranslatedLyrics('');
+
+    // Validate inputs
+    if (songTitle.length < 2) {
+      setError('Song title must be at least 2 characters long.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (artist.length < 2) {
+      setError('Artist name must be at least 2 characters long.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // Fetch lyrics
@@ -125,7 +139,7 @@ export default function Home() {
             {isLoading ? 'Fetching...' : 'Translate'}
           </Button>
 
-          {error && <p className="text-center text-red-500">{error}</p>}
+          {error && <p className="text-center text-sm text-red-500">{error}</p>}
 
           {renderLyrics()}
         </CardFooter>
