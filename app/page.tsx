@@ -118,7 +118,7 @@ export default function Home() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <Card className="mx-auto max-w-lg">
+      <Card className="mx-auto max-w-lg shadow-md">
         <CardHeader>
           <CardTitle>Translate Song to Hebrew</CardTitle>
           <CardDescription>Enter the song details below</CardDescription>
