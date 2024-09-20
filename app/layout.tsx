@@ -9,6 +9,8 @@ export const metadata: Metadata = {
   description: 'Translate songs to Hebrew',
   icons: {
     icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
   openGraph: {
     images: ['/og-image.png'],
@@ -18,6 +20,7 @@ export const metadata: Metadata = {
     title: 'SongScribe',
     description: 'Translate songs to Hebrew',
   },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({

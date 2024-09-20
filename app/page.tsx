@@ -5,45 +5,76 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 export default function Home() {
-  // State variables to manage form inputs and API responses
-  const [songTitle, setSongTitle] = useState('');
-  const [artist, setArtist] = useState('');
+  const [input, setInput] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [translatedLyrics, setTranslatedLyrics] = useState('');
+  const [songInfo, setSongInfo] = useState<{
+    title: string;
+    cleanTitle: string;
+    artist: string;
+    album: string;
+    releaseDate: string;
+    imageUrl: string;
+  } | null>(null);
+  const [imageError, setImageError] = useState(false);
+  const [urlInfo, setUrlInfo] = useState<{ title: string; artist: string; source: string } | null>(null);
 
-  // Function to handle the translation process
   const handleTranslate = async () => {
-    // Reset states before starting the translation process
     setIsLoading(true);
     setError('');
     setLyrics('');
     setTranslatedLyrics('');
+    setSongInfo(null);
+    setUrlInfo(null);
 
-    // Validate input fields
-    if (songTitle.length < 2) {
-      setError('Song title must be at least 2 characters long.');
-      setIsLoading(false);
-      return;
-    }
-
-    if (artist.length < 2) {
-      setError('Artist name must be at least 2 characters long.');
+    if (input.length < 2) {
+      setError('Input must be at least 2 characters long.');
       setIsLoading(false);
       return;
     }
 
     try {
+      let title, artist;
+
+      if (input.startsWith('http://') || input.startsWith('https://')) {
+        // Parse URL
+        const parseResponse = await fetch('/api/parse-url', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url: input }),
+        });
+
+        if (!parseResponse.ok) {
+          throw new Error('Failed to parse URL');
+        }
+
+        const parseData = await parseResponse.json();
+        title = parseData.title;
+        artist = parseData.artist;
+        setUrlInfo({ title, artist, source: parseData.source });
+      } else {
+        // Split input into title and artist
+        [artist, title] = input.split(' - ');
+      }
+
+      if (!title || !artist) {
+        throw new Error('Invalid input format');
+      }
+
       // Fetch lyrics from the API
       const lyricsResponse = await fetch('/api/lyrics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ title: songTitle, artist }),
+        body: JSON.stringify({ title, artist }),
       });
 
       if (!lyricsResponse.ok) {
@@ -51,7 +82,14 @@ export default function Home() {
       }
 
       const lyricsData = await lyricsResponse.json();
+
+      // Check if the returned artist is 'Genius'
+      if (lyricsData.songInfo.artist === 'Genius') {
+        throw new Error('Unable to find the correct artist. Please try a different input format.');
+      }
+
       setLyrics(lyricsData.lyrics);
+      setSongInfo(lyricsData.songInfo);
 
       // Translate the fetched lyrics
       const translateResponse = await fetch('/api/translate', {
@@ -70,19 +108,57 @@ export default function Home() {
       setTranslatedLyrics(translateData.translatedText);
     } catch (error) {
       console.error('Error:', error);
-      setError('An error occurred. Please try again.');
+      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Function to render the translated lyrics
+  const renderSongInfo = () => {
+    if (!songInfo) return null;
+
+    return (
+      <div className="mt-4 w-full">
+        <h3 className="mb-2 text-lg font-semibold">More Information:</h3>
+        <div className="rounded-md bg-secondary p-4">
+          <div className="flex items-center space-x-4">
+            {!imageError ? (
+              <Image
+                src={songInfo.imageUrl}
+                alt={songInfo.title}
+                width={100}
+                height={100}
+                className="rounded-md"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="flex h-[100px] w-[100px] items-center justify-center rounded-md bg-gray-300">
+                <span className="text-gray-500">No Image</span>
+              </div>
+            )}
+            <div>
+              <p>
+                <strong>Artist:</strong> {songInfo.artist}
+              </p>
+              <p>
+                <strong>Title:</strong> {songInfo.title}
+              </p>
+              <p>
+                <strong>Release Date:</strong> {songInfo.releaseDate}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderLyrics = () => {
     if (!lyrics || !translatedLyrics) return null;
 
-    // Split lyrics into lines for side-by-side display
-    const originalLines = lyrics.split('\n');
-    const hebrewLines = translatedLyrics.split('\n');
+    // Split lyrics into lines and filter out empty lines
+    const originalLines = lyrics.split('\n').filter((line) => line.trim() !== '');
+    const hebrewLines = translatedLyrics.split('\n').filter((line) => line.trim() !== '');
     const maxLines = Math.max(originalLines.length, hebrewLines.length);
 
     return (
@@ -91,10 +167,14 @@ export default function Home() {
         <div className="rounded-md bg-secondary p-4">
           {Array.from({ length: maxLines }).map((_, index) => (
             <div key={index} className="mb-2 text-center">
-              <p className="text-sm text-blue-600 dark:text-blue-400">{originalLines[index] || ' '}</p>
-              <p className="text-sm text-red-600 dark:text-red-400" dir="rtl">
-                {hebrewLines[index] || ' '}
-              </p>
+              {originalLines[index] && (
+                <p className="text-sm text-blue-600 dark:text-blue-400">{originalLines[index]}</p>
+              )}
+              {hebrewLines[index] && (
+                <p className="text-sm text-red-600 dark:text-red-400" dir="rtl">
+                  {hebrewLines[index]}
+                </p>
+              )}
             </div>
           ))}
         </div>
@@ -102,13 +182,31 @@ export default function Home() {
     );
   };
 
-  // Handle form submission
+  const renderUrlInfo = () => {
+    if (!urlInfo) return null;
+    return (
+      <div className="mt-4 w-full">
+        <h3 className="mb-2 text-lg font-semibold">URL Information:</h3>
+        <div className="rounded-md bg-secondary p-4">
+          <p>
+            <strong>Title:</strong> {urlInfo.title}
+          </p>
+          <p>
+            <strong>Artist:</strong> {urlInfo.artist}
+          </p>
+          <p>
+            <strong>Source:</strong> {urlInfo.source}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     handleTranslate();
   };
 
-  // Handle 'Enter' key press in input fields
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -117,34 +215,22 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="mx-auto max-w-lg shadow-md">
+    <div className="container mx-auto p-4">
+      <Card className="mx-auto w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Translate Song to Hebrew</CardTitle>
-          <CardDescription>Enter the song details below</CardDescription>
+          <CardDescription>Enter song details or paste a YouTube URL</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid w-full items-center gap-4">
-              {/* Song Title Input */}
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="songTitle">Song Title</Label>
+                <Label htmlFor="input">Song Input</Label>
                 <Input
-                  id="songTitle"
-                  placeholder="Enter song title"
-                  value={songTitle}
-                  onChange={(e) => setSongTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                />
-              </div>
-              {/* Artist Input */}
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="artist">Artist</Label>
-                <Input
-                  id="artist"
-                  placeholder="Enter artist name"
-                  value={artist}
-                  onChange={(e) => setArtist(e.target.value)}
+                  id="input"
+                  placeholder="Enter 'Artist - Title' or paste a YouTube URL"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                 />
               </div>
@@ -160,8 +246,14 @@ export default function Home() {
           {/* Error Message Display */}
           {error && <p className="text-center text-sm text-red-500">{error}</p>}
 
+          {/* Song Information */}
+          {renderSongInfo()}
+
           {/* Rendered Lyrics */}
           {renderLyrics()}
+
+          {/* URL Information */}
+          {renderUrlInfo()}
         </CardFooter>
       </Card>
     </div>

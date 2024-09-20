@@ -5,42 +5,48 @@ import * as cheerio from 'cheerio';
 // Genius API base URL
 const GENIUS_API_BASE_URL = 'https://api.genius.com';
 
+// Helper function to clean up the title
+function cleanupTitle(title: string): string {
+  // Remove brackets and their contents at the end of the string
+  return title.replace(/\s*\([^)]*\)\s*$/, '').trim();
+}
+
 // Function to search for a song using the Genius API
 async function searchSong(title: string, artist: string) {
-  console.log(`Searching for song: "${title}" by ${artist}`);
   try {
-    // Make a GET request to the Genius API search endpoint
+    const cleanTitle = cleanupTitle(title);
+    const cleanArtist = cleanupTitle(artist);
+    const query = `${cleanArtist} ${cleanTitle}`;
+
     const response = await axios.get(`${GENIUS_API_BASE_URL}/search`, {
       headers: {
         Authorization: `Bearer ${process.env.GENIUS_ACCESS_TOKEN}`,
       },
-      params: {
-        q: `${title} ${artist}`,
-      },
+      params: { q: query },
     });
 
-    console.log('Search response:', response.data);
-    // Extract the first result from the API response
-    const result = response.data.response.hits[0]?.result;
-    if (!result) {
-      console.log('No results found for the given song and artist');
+    const hits: GeniusHit[] = response.data.response.hits;
+    if (hits.length === 0) {
       return null;
     }
-    return result;
+
+    // Find the best match
+    const bestMatch =
+      hits.find(
+        (hit: GeniusHit) =>
+          hit.result.primary_artist.name.toLowerCase().includes(cleanArtist.toLowerCase()) &&
+          hit.result.title.toLowerCase().includes(cleanTitle.toLowerCase())
+      ) || hits[0];
+
+    return bestMatch.result;
   } catch (error) {
-    // Handle and log errors
-    if (error instanceof Error) {
-      console.error('Error searching for song:', error.message);
-    } else {
-      console.error('Unknown error occurred while searching for song');
-    }
+    console.error('Error searching for song:', error);
     throw new Error('Failed to search for song');
   }
 }
 
 // Function to fetch and extract lyrics from a Genius song page
 async function fetchLyrics(url: string) {
-  console.log(`Fetching lyrics from URL: ${url}`);
   const response = await axios.get(url);
   const $ = cheerio.load(response.data);
 
@@ -70,7 +76,6 @@ async function fetchLyrics(url: string) {
       .join('\n');
   }
 
-  console.log('Extracted and cleaned lyrics length:', lyrics?.length);
   return lyrics;
 }
 
@@ -78,30 +83,46 @@ async function fetchLyrics(url: string) {
 export async function POST(request: Request) {
   try {
     const { title, artist } = await request.json();
-    console.log(`Received request for lyrics: "${title}" by ${artist}`);
 
     // Search for the song using the Genius API
     const song = await searchSong(title, artist);
     if (!song) {
-      console.log('Song not found');
       return NextResponse.json({ error: 'Song not found' }, { status: 404 });
     }
 
     // Fetch and extract lyrics from the Genius song page
     const lyrics = await fetchLyrics(song.url);
     if (!lyrics) {
-      console.log('Lyrics not found');
       return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });
     }
 
-    console.log('Successfully fetched lyrics');
-    return NextResponse.json({ lyrics });
+    // Extract additional song information
+    const songInfo = {
+      title: song.title,
+      cleanTitle: cleanupTitle(song.title),
+      artist: song.primary_artist.name, // Ensure this is included
+      releaseDate: song.release_date_for_display || 'N/A',
+      imageUrl: song.song_art_image_url,
+    };
+
+    return NextResponse.json({ lyrics, songInfo });
   } catch (error) {
-    // Handle and log errors
     console.error('Error fetching lyrics:', error instanceof Error ? error.message : 'Unknown error');
     return NextResponse.json(
       { error: 'Failed to fetch lyrics', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
+}
+
+interface GeniusHit {
+  result: {
+    primary_artist: {
+      name: string;
+    };
+    title: string;
+    url: string;
+    release_date_for_display?: string;
+    song_art_image_url?: string;
+  };
 }
