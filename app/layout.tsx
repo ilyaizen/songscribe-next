@@ -7,6 +7,17 @@ import { Providers } from '@/components/Providers';
 export const metadata: Metadata = {
   title: 'SongScribe',
   description: 'Translate songs to Hebrew',
+  icons: {
+    icon: '/favicon.ico',
+  },
+  openGraph: {
+    images: ['/og-image.png'],
+    type: 'website',
+    siteName: 'SongScribe',
+    locale: 'en_US',
+    title: 'SongScribe',
+    description: 'Translate songs to Hebrew',
+  },
 };
 
 export default function RootLayout({
