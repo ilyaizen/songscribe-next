@@ -3,8 +3,11 @@ import axios from 'axios';
 
 // New helper function to extract artist and title from YouTube video title
 function extractArtistAndTitle(videoTitle: string): { artist: string; title: string } {
-  // Remove common suffixes like "(Official Audio)", "(Official Video)", etc.
-  const cleanTitle = videoTitle.replace(/\s*[\(\]].*?[\)\]].*$/, '').trim();
+  // Remove text within brackets, parentheses, and common suffixes
+  const cleanTitle = videoTitle
+    .replace(/\s*\[.*?\]|\(.*?\)/g, '')
+    .replace(/\s*(Official Audio|Official Video|Official Music Video|Audio|Video|Lyrics|Lyric Video)$/i, '')
+    .trim();
 
   // Check if the title contains a hyphen (assuming "Artist - Title" format)
   const parts = cleanTitle.split('-').map((part) => part.trim());

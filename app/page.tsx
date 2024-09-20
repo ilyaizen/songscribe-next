@@ -114,8 +114,17 @@ export default function Home() {
     }
   };
 
+  const cleanTitle = (title: string) => {
+    return title
+      .replace(/\s*\[.*?\]|\(.*?\)/g, '')
+      .replace(/\s*(Official Audio|Official Video|Official Music Video|Audio|Video|Lyrics|Lyric Video)$/i, '')
+      .trim();
+  };
+
   const renderSongInfo = () => {
     if (!songInfo) return null;
+
+    const cleanedTitle = cleanTitle(songInfo.title);
 
     return (
       <div className="mt-4 w-full">
@@ -125,7 +134,7 @@ export default function Home() {
             {!imageError ? (
               <Image
                 src={songInfo.imageUrl}
-                alt={songInfo.title}
+                alt={cleanedTitle}
                 width={100}
                 height={100}
                 className="rounded-md"
@@ -141,7 +150,7 @@ export default function Home() {
                 <strong>Artist:</strong> {songInfo.artist}
               </p>
               <p>
-                <strong>Title:</strong> {songInfo.title}
+                <strong>Title:</strong> {cleanedTitle}
               </p>
               <p>
                 <strong>Release Date:</strong> {songInfo.releaseDate}
@@ -184,12 +193,15 @@ export default function Home() {
 
   const renderUrlInfo = () => {
     if (!urlInfo) return null;
+
+    const cleanedTitle = cleanTitle(urlInfo.title);
+
     return (
       <div className="mt-4 w-full">
         <h3 className="mb-2 text-lg font-semibold">URL Information:</h3>
         <div className="rounded-md bg-secondary p-4">
           <p>
-            <strong>Title:</strong> {urlInfo.title}
+            <strong>Title:</strong> {cleanedTitle}
           </p>
           <p>
             <strong>Artist:</strong> {urlInfo.artist}
