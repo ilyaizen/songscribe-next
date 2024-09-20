@@ -265,7 +265,7 @@ export default function Home() {
           {renderLyrics()}
 
           {/* URL Information */}
-          {renderUrlInfo()}
+          {/* {renderUrlInfo()} */}
         </CardFooter>
       </Card>
     </div>
