@@ -6,19 +6,13 @@ import { Providers } from '@/components/Providers';
 
 export const metadata: Metadata = {
   title: 'SongScribe',
-  description: 'Translate songs to Hebrew',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
-  },
+  description: 'Translate songs to Hebrew with ease',
+  keywords: ['song translation', 'Hebrew lyrics', 'music translation'],
   openGraph: {
+    title: 'SongScribe',
+    description: 'Translate songs to Hebrew with ease',
     images: ['/og-image.png'],
     type: 'website',
-    siteName: 'SongScribe',
-    locale: 'en_US',
-    title: 'SongScribe',
-    description: 'Translate songs to Hebrew',
   },
   manifest: '/manifest.json',
 };
