@@ -87,13 +87,13 @@ export async function POST(request: Request) {
     // Search for the song using the Genius API
     const song = await searchSong(title, artist);
     if (!song) {
-      return NextResponse.json({ error: 'Song not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Song not found in Genius database' }, { status: 404 });
     }
 
     // Fetch and extract lyrics from the Genius song page
     const lyrics = await fetchLyrics(song.url);
     if (!lyrics) {
-      return NextResponse.json({ error: 'Lyrics not found' }, { status: 404 });
+      return NextResponse.json({ error: 'Lyrics not found on Genius page' }, { status: 404 });
     }
 
     // Extract additional song information
@@ -108,10 +108,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ lyrics, songInfo });
   } catch (error) {
     console.error('Error fetching lyrics:', error instanceof Error ? error.message : 'Unknown error');
-    return NextResponse.json(
-      { error: 'Failed to fetch lyrics', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    return NextResponse.json({ error: `Failed to fetch lyrics: ${errorMessage}` }, { status: 500 });
   }
 }
 

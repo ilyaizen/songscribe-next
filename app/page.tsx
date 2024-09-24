@@ -78,7 +78,8 @@ export default function Home() {
       });
 
       if (!lyricsResponse.ok) {
-        throw new Error('Failed to fetch lyrics');
+        const errorData = await lyricsResponse.json();
+        throw new Error(errorData.error || 'Failed to fetch lyrics');
       }
 
       const lyricsData = await lyricsResponse.json();
@@ -108,7 +109,7 @@ export default function Home() {
       setTranslatedLyrics(translateData.translatedText);
     } catch (error) {
       console.error('Error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred. Please try again.');
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
